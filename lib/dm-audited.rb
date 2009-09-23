@@ -67,12 +67,12 @@ module DataMapper
         include DataMapper::Audited::InstanceMethods
 
         before :save do
-          @audited_attributes = original_values.clone
-          @audited_new_record = new_record?
+          @audited_attributes = original_attributes.clone
+          @audited_new_record = new?
         end
 
         before :destroy do
-          @audited_attributes = original_values.clone
+          @audited_attributes = original_attributes.clone
         end
 
         after :save do
@@ -89,11 +89,11 @@ module DataMapper
     class Audit
       include DataMapper::Resource
 
-      property :id,             Integer, :serial => true
+      property :id,             Serial
       property :auditable_type, String
       property :auditable_id,   Integer
       property :user_id,        Integer
-      property :request_uri,    String, :size => 255
+      property :request_uri,    String, :length => 255
       property :request_method, String
       property :request_params, Text
       property :action,         String
