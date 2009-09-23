@@ -6,23 +6,9 @@ require 'spec/rake/spectask'
 require 'pathname'
  
 CLEAN.include '{log,pkg}/'
- 
-spec = Gem::Specification.new do |s|
-  s.name             = 'dm-audited'
-  s.version          = '0.0.1'
-  s.platform         = Gem::Platform::RUBY
-  s.has_rdoc         = true
-  s.extra_rdoc_files = %w[ README LICENSE ]
-  s.summary          = 'DataMapper plugin providing auditing for resources'
-  s.description      = s.summary
-  s.author           = 'Dirkjan Bussink'
-  s.email            = 'd.bussink@gmail.com'
-  s.homepage         = 'http://github.com/dbussink/dm-audited'
-  s.require_path     = 'lib'
-  s.files            = FileList[ '{lib,spec}/**/*.rb', 'spec/spec.opts', 'Rakefile', *s.extra_rdoc_files ]
-  s.add_dependency('dm-core', ">=0.9.2")
-end
- 
+
+spec = Gem::Specification.load('dm-audited.gemspec')
+
 task :default => [ :spec ]
  
 WIN32 = (RUBY_PLATFORM =~ /win32|mingw|cygwin/) rescue nil
