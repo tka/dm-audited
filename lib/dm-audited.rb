@@ -20,36 +20,41 @@ module DataMapper
         user    = defined?(::User)        && ::User.respond_to?(:current_user) && ::User.current_user ? ::User.current_user.id        : nil
         request = defined?(::Application) && ::Application.respond_to?(:current_request)              ? ::Application.current_request : nil
 
-        changed_attributes = {}
-        @audited_attributes.each do |key, val|
-          changed_attributes[key] = [val, attributes[key]] unless val == attributes[key]
-        end
-
-        audit_attributes = {
-          :auditable_type => self.class.to_s,
-          :auditable_id   => self.id,
-          :user_id        => user,
-          :action         => action,
-          :changes        => changed_attributes
-        }
-
-        if request
-          params = request.params
-          if defined?(::Application) && defined?(Merb::Controller)
-            params = Application._filter_params(params)
+        if @audited_attributes
+          changed_attributes = {}
+          @audited_attributes.each do |key, val|
+            changed_attributes[key.name] = [val, attribute_get(key.name)] unless attribute_get(key.name) == val
           end
 
-          audit_attributes.merge!(
-            :request_uri    => request.uri,
-            :request_method => request.method,
-            :request_params => params
-          )
+          audit_attributes = {
+            :auditable_type => self.class.to_s,
+            :auditable_id   => self.id,
+            :user_id        => user,
+            :action         => action,
+            :changes        => changed_attributes
+          }
+
+          if request
+            params = request.params
+            if defined?(::Application) && defined?(Merb::Controller)
+              params = Application._filter_params(params)
+            end
+
+            audit_attributes.merge!(
+              :request_uri    => request.uri,
+              :request_method => request.method,
+              :request_params => params,
+              :created_at     => request.start
+            )
+          end
+
+          unless self.frozen?
+            remove_instance_variable("@audited_attributes")
+            remove_instance_variable("@audited_new_record") if instance_variable_defined?("@audited_new_record")
+          end
+
+          Audit.create(audit_attributes) unless changed_attributes.empty? && action != 'destroy'
         end
-
-        remove_instance_variable("@audited_attributes")
-        remove_instance_variable("@audited_new_record") if instance_variable_defined?("@audited_new_record")
-
-        Audit.create(audit_attributes) unless changed_attributes.empty? && action != 'destroy'
       end
 
       def audits
@@ -98,7 +103,7 @@ module DataMapper
       property :created_at,     DateTime
 
       def auditable
-        auditable_type.constantize.get(auditable_id)
+        ::Object.full_const_get(auditable_type).get(auditable_id)
       end
 
       def changes=(properties)
@@ -114,6 +119,7 @@ module DataMapper
       end
 
       def request_params
+        return nil unless attribute_get(:request_params)
         @request_params_hash ||= Mash.new(JSON.load(attribute_get(:request_params)))
         @request_params_hash
       end

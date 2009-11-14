@@ -10,7 +10,7 @@ describe "DataMapper::Audited" do
       include DataMapper::Resource
       include DataMapper::Audited
 
-      property :id,        Integer, :serial => true
+      property :id,        Serial
       property :name,      String
       property :breed,     String
 
