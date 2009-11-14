@@ -1,6 +1,4 @@
 require 'rubygems'
-gem 'dm-core', '>=0.9.2'
-gem 'dm-serializer', '>=0.9.2'
 require 'dm-core'
 require 'dm-timestamps'
 require 'dm-serializer'
