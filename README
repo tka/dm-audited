@@ -2,3 +2,29 @@ dm-audited
 ==========
 
 Add auditing to DataMapper Resources
+
+class Post
+  include DataMapper::Resource
+  extend Searchable
+
+
+  property :id,       Serial, :index => true
+  property :content,  Text
+  property :created_at, DateTime
+  property :updated_at, DateTime
+
+  is_audited
+end
+
+
+p=Post.create(:content => 'A')
+
+p.content='B'
+
+p.save
+
+=== Get all autits ===
+p.audits 
+
+=== Get Changes ===
+p.autits.first.changes 
