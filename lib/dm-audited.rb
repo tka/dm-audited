@@ -19,7 +19,6 @@ module DataMapper
         # this and make sure it's thread safe.
         user    = defined?(::User)        && ::User.respond_to?(:current_user) && ::User.current_user ? ::User.current_user.id        : nil
         request = defined?(::Application) && ::Application.respond_to?(:current_request)              ? ::Application.current_request : nil
-
         if @audited_attributes
           changed_attributes = {}
           @audited_attributes.each do |key, val|
@@ -97,34 +96,18 @@ module DataMapper
       property :user_id,        Integer
       property :request_uri,    String, :length => 255
       property :request_method, String
-      property :request_params, Text
+      property :request_params, Object
       property :action,         String
-      property :changes,        Text
+      property :changes,        Object
       property :created_at,     DateTime
 
       def auditable
         ::Object.full_const_get(auditable_type).get(auditable_id)
       end
-
-      def changes=(properties)
-        attribute_set(:changes, properties.to_json)
-      end
-
-      def changes
-        @changes_hash ||= Mash.new(JSON.load(attribute_get(:changes)))
-      end
-
-      def request_params=(params)
-        attribute_set(:request_params, params.to_json)
-      end
-
-      def request_params
-        return nil unless attribute_get(:request_params)
-        @request_params_hash ||= Mash.new(JSON.load(attribute_get(:request_params)))
-        @request_params_hash
-      end
-
+      
     end
-
+    
+    Model.append_inclusions self
   end
+
 end
