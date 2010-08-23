@@ -17,10 +17,10 @@ module DataMapper
           raise "install http://github.com/mauricio/current_request first"
         end
 
-        if defined?(::Devise)
+        if defined?(::Devise) && request
           users={}
           ::Devise.mappings.keys.each do | key |
-            warden=CurrentRequest::Holder.current_request.env['warden']
+            warden=request.env['warden']
             users[key]= warden.user(key).id if warden.user(key)
           end
         else
@@ -113,12 +113,17 @@ module DataMapper
       end
       
       def users
-        if defined?(::Devise)
-          r={}
-          self['users'].each do | role, id|
+        if self['users'] 
+          if defined?(::Devise)
+            r={}
+            self['users'].each do | role, id|
             r[role.to_sym]= Kernel.const_get(role.to_s.capitalize).find id
+            end
+            r
+
           end
-          r
+        else
+          nil
         end
       end 
     end
