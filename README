@@ -27,3 +27,6 @@ p.audits
 
 === Get changes ===
 p.autits.first.changes 
+
+=== Get operators ==
+p.autits.first.users

@@ -11,22 +11,14 @@ module DataMapper
     module InstanceMethods
 
       def create_audit(action)
-        if defined?(CurrentRequest)
-          request = CurrentRequest::Holder.current_request  
-        else
-          raise "install http://github.com/mauricio/current_request first"
-        end
-
-        if defined?(::Devise)
-          users={}
-          ::Devise.mappings.keys.each do | key |
-            warden=CurrentRequest::Holder.current_request.env['warden']
-            users[key]= warden.user(key).id if warden.user(key)
-          end
-        else
-          user = nil
-        end
-        
+        # It needs to provide User.current_user if the user is to be saved
+        # The implementer needs to provide this and for example needs to make
+        # sure that the implementation is thread safe.
+        # The request is also optionally included if it can be found in the
+        # Application controller. Here again the implementer needs to provide
+        # this and make sure it's thread safe.
+        user    = defined?(::User)        && ::User.respond_to?(:current_user) && ::User.current_user ? ::User.current_user.id        : nil
+        request = defined?(::Application) && ::Application.respond_to?(:current_request)              ? ::Application.current_request : nil
         if @audited_attributes
           changed_attributes = {}
           @audited_attributes.each do |key, val|
@@ -36,7 +28,7 @@ module DataMapper
           audit_attributes = {
             :auditable_type => self.class.to_s,
             :auditable_id   => self.id,
-            :users       => users,
+            :user_id        => user,
             :action         => action,
             :changes        => changed_attributes
           }
@@ -48,9 +40,10 @@ module DataMapper
             end
 
             audit_attributes.merge!(
-              :request_uri    => request.request_uri,
-              :request_method => request.request_method,
-              :request_params => params
+              :request_uri    => request.uri,
+              :request_method => request.method,
+              :request_params => params,
+              :created_at     => request.start
             )
           end
 
@@ -100,7 +93,7 @@ module DataMapper
       property :id,             Serial
       property :auditable_type, String
       property :auditable_id,   Integer
-      property :users,           Object
+      property :user_id,        Integer
       property :request_uri,    String, :length => 255
       property :request_method, String
       property :request_params, Object
@@ -112,15 +105,6 @@ module DataMapper
         ::Object.full_const_get(auditable_type).get(auditable_id)
       end
       
-      def get_users
-        if defined?(::Devise)
-          r={}
-          self['users'].each do | role, id|
-            r[role.to_sym]= Kernel.const_get(role..to_s.capitalize).find id
-          end
-          r
-        end
-      end 
     end
     
     Model.append_inclusions self
