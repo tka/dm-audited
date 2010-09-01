@@ -30,7 +30,15 @@ module DataMapper
         if @audited_attributes
           changed_attributes = {}
           @audited_attributes.each do |key, val|
-            changed_attributes[key.name] = [val, attribute_get(key.name)] unless attribute_get(key.name) == val
+            if properties[key.name] && attribute_get(key.name) != val 
+              changed_attributes[key.name] = [val, attribute_get(key.name)] 
+            elsif !properties[key.name] && self.send(key.name) != val
+              x=self.send(key.name)
+              if !x.class.name.blank?
+                changed_attributes[key.name] = [val, x] 
+              end
+            end
+              
           end
 
           audit_attributes = {
@@ -38,9 +46,8 @@ module DataMapper
             :auditable_id   => self.id,
             :users       => users,
             :action         => action,
-            :changes        => changed_attributes
+            :changes        => changed_attributes.to_yaml
           }
-
           if request
             params = request.params
             if defined?(::Application) && defined?(Merb::Controller)
@@ -48,7 +55,7 @@ module DataMapper
             end
 
             audit_attributes.merge!(
-              :request_uri    => request.request_uri,
+              :request_uri    => request.fullpath,
               :request_method => request.request_method,
               :request_params => params
             )
@@ -105,7 +112,7 @@ module DataMapper
       property :request_method, String
       property :request_params, Object
       property :action,         String
-      property :changes,        Object
+      property :changes,        Text
       property :created_at,     DateTime
 
       def auditable
@@ -126,6 +133,14 @@ module DataMapper
           nil
         end
       end 
+      def changes=(property)
+        attribute_set(:changes, property.to_yaml)
+      end
+
+      def changes
+        @changes_hash ||= YAML.load(attribute_get(:changes))
+      end
+
     end
     
     Model.append_inclusions self
