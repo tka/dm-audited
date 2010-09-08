@@ -46,7 +46,7 @@ module DataMapper
             :auditable_id   => self.id,
             :users       => users,
             :action         => action,
-            :changes        => changed_attributes.to_yaml
+            :changes_yaml        => changed_attributes
           }
           if request
             params = request.params
@@ -66,7 +66,7 @@ module DataMapper
             remove_instance_variable("@audited_new_record") if instance_variable_defined?("@audited_new_record")
           end
 
-          Audit.create(audit_attributes) unless changed_attributes.empty? && action != 'destroy'
+          x=Audit.create(audit_attributes) unless changed_attributes.empty? && action != 'destroy'
         end
       end
 
@@ -112,7 +112,7 @@ module DataMapper
       property :request_method, String
       property :request_params, Object
       property :action,         String
-      property :changes,        Text
+      property :changes_yaml,   Text
       property :created_at,     DateTime
 
       def auditable
@@ -132,13 +132,14 @@ module DataMapper
         else
           nil
         end
-      end 
-      def changes=(property)
-        attribute_set(:changes, property.to_yaml)
+      end
+
+      def changes_yaml=(property)
+        attribute_set(:changes_yaml, property.to_yaml)
       end
 
       def changes
-        @changes_hash ||= YAML.load(attribute_get(:changes))
+        @changes_hash ||= YAML.load(attribute_get(:changes_yaml))
       end
 
     end
