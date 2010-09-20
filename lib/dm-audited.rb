@@ -57,7 +57,7 @@ module DataMapper
             audit_attributes.merge!(
               :request_uri    => request.fullpath,
               :request_method => request.request_method,
-              :request_params => params
+              :request_params_yaml => params
             )
           end
 
@@ -66,7 +66,10 @@ module DataMapper
             remove_instance_variable("@audited_new_record") if instance_variable_defined?("@audited_new_record")
           end
 
-          x=Audit.create(audit_attributes) unless changed_attributes.empty? && action != 'destroy'
+          unless changed_attributes.empty? && action != 'destroy'
+            x=Audit.new(audit_attributes) 
+            x.save
+          end
         end
       end
 
@@ -110,7 +113,7 @@ module DataMapper
       property :users,           Object
       property :request_uri,    String, :length => 255
       property :request_method, String
-      property :request_params, Object
+      property :request_params_yaml, Text
       property :action,         String
       property :changes_yaml,   Text
       property :created_at,     DateTime
@@ -132,6 +135,14 @@ module DataMapper
         else
           nil
         end
+      end
+
+      def request_params_yaml=(property)
+        attribute_set(:request_params_yaml, property.to_yaml)
+      end
+
+      def request_params
+        @request_params_hash ||= YAML.load(attribute_get(:request_params_yaml))
       end
 
       def changes_yaml=(property)
